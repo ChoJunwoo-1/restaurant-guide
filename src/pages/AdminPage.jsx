@@ -40,7 +40,7 @@ export default function AdminPage() {
     const { data, error } = await supabase
       .from('restaurants')
       .select('*')
-      .order('station', { ascending: true })
+      .order('station_ko', { ascending: true })
       .order('sort_order', { ascending: true });
 
     if (!error) setRestaurants(data);
