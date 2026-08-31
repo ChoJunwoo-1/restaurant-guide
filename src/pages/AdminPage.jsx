@@ -3,11 +3,9 @@ import { supabase } from '../supabaseClient';
 import '../index.css';
 
 const initialFormState = {
-  station: '',
-  name_ko: '', genre_ko: '',
-  name_ja: '', genre_ja: '',
-  name_en: '', genre_en: '',
-  name_zh: '', genre_zh: '',
+  station_ko: '', station_ja: '', station_en: '', station_zh: '',
+  name_ko: '', genre_ko: '', name_ja: '', genre_ja: '',
+  name_en: '', genre_en: '', name_zh: '', genre_zh: '',
   naver_url: '', sort_order: 1
 };
 
@@ -156,10 +154,24 @@ export default function AdminPage() {
           </h2>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
             
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', background: '#f7f7f8', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', marginBottom: '5px' }}>역 이름</label>
-              <input name="station" value={formData.station} onChange={handleChange} placeholder="예: 을지로3가" required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
+              <label style={{ fontSize: '12px', color: '#8e8e93' }}>한국어 역 이름</label>
+              <input name="station_ko" value={formData.station_ko} onChange={handleChange} required style={{ width: '100%', padding: '8px', boxSizing: 'border-box', marginTop: '4px' }} />
             </div>
+            <div>
+              <label style={{ fontSize: '12px', color: '#8e8e93' }}>日本語 역 이름</label>
+              <input name="station_ja" value={formData.station_ja} onChange={handleChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box', marginTop: '4px' }} />
+            </div>
+            <div>
+              <label style={{ fontSize: '12px', color: '#8e8e93' }}>English 역 이름</label>
+              <input name="station_en" value={formData.station_en} onChange={handleChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box', marginTop: '4px' }} />
+            </div>
+            <div>
+              <label style={{ fontSize: '12px', color: '#8e8e93' }}>中文 역 이름</label>
+              <input name="station_zh" value={formData.station_zh} onChange={handleChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box', marginTop: '4px' }} />
+            </div>
+          </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', background: '#f7f7f8', padding: '15px', borderRadius: '8px' }}>
               <div>
@@ -229,7 +241,7 @@ export default function AdminPage() {
             {restaurants.map(r => (
               <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.05)' }}>
                 <div>
-                  <div style={{ fontSize: '13px', color: '#8e8e93', marginBottom: '4px' }}>🚇 {r.station} (순서: {r.sort_order})</div>
+                  <div style={{ fontSize: '13px', color: '#8e8e93', marginBottom: '4px' }}>🚇 {r.station_ko} (순서: {r.sort_order})</div>
                   <div style={{ fontSize: '16px', fontWeight: '600' }}>{r.name_ko}</div>
                 </div>
                 
