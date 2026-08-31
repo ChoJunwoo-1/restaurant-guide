@@ -82,12 +82,15 @@ export default function AdminPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // DB 고유값(id, created_at 등)을 빼고 순수 업데이트할 데이터만 분리합니다.
+    const { id, created_at, ...updateData } = formData;
+    
     if (editId) {
       // ★ 수정(UPDATE) 모드
       const { error } = await supabase
         .from('restaurants')
-        .update(formData)
-        .eq('id', editId); // 어떤 데이터를 수정할지 id로 지정
+        .update(updateData) // formData 대신 분리해낸 updateData를 사용
+        .eq('id', editId); 
         
       if (error) {
         console.error(error);
@@ -98,8 +101,8 @@ export default function AdminPage() {
         fetchRestaurants();
       }
     } else {
-      // ★ 추가(INSERT) 모드 (기존과 동일)
-      const { error } = await supabase.from('restaurants').insert([formData]);
+      // ★ 추가(INSERT) 모드
+      const { error } = await supabase.from('restaurants').insert([updateData]); // 여기도 updateData 사용
       
       if (error) {
         console.error(error);
