@@ -4,6 +4,20 @@ import BottomSheet from '../components/BottomSheet';
 import { LINE_INFO } from '../constants';
 import '../index.css';
 
+const STATION_ORDER = [
+  '동대문',
+  '동대문역사문화공원',
+  '종로5가',
+  '동묘앞',
+  '혜화',
+  '을지로4가',
+  '신당',
+  '종로3가',
+  '을지로3가',
+  '명동',
+  '시청'
+];
+
 export default function GuestPage() {
   const [restaurants, setRestaurants] = useState([]);
   const [lang, setLang] = useState('ko');
@@ -17,17 +31,22 @@ export default function GuestPage() {
     const { data, error } = await supabase
       .from('restaurants')
       .select('*, genres(*)')
-      .order('station_ko', { ascending: true })
-      .order('sort_order', { ascending: true });
+      .order('name_ko', { ascending: true });
 
     if (!error) setRestaurants(data);
   }
 
-  const stations = [...new Set(restaurants.map(r => r.station_ko))];
+  const stations = [...new Set(restaurants.map(r => r.station_ko))].sort((a, b) => {
+    let indexA = STATION_ORDER.indexOf(a);
+    let indexB = STATION_ORDER.indexOf(b);
+    if (indexA === -1) indexA = 999;
+    if (indexB === -1) indexB = 999;
+    return indexA - indexB;
+  });
 
   return (
     <div className="container">
-      <h1 style={{ fontSize: '28px', fontWeight: '800' }}>맛집 추천</h1>
+      <h1 style={{ fontSize: '28px', fontWeight: '800', color: '#ffffff' }}>맛집 추천</h1>
       <div className="lang-selector">
         <button className={`lang-btn ${lang === 'ko' ? 'active' : ''}`} onClick={() => setLang('ko')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
           <img src="https://flagcdn.com/w20/kr.png" alt="Korea" style={{ width: '18px', borderRadius: '2px' }} />

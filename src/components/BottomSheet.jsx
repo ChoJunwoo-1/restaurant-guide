@@ -25,7 +25,7 @@ export default function BottomSheet({ restaurant, lang, onClose }) {
         <p className="sheet-genre">{genreText}</p>
 
         {noteText && (
-          <div style={{ background: '#fff3cd', padding: '12px', borderRadius: '8px', marginTop: '10px', fontSize: '14px', color: '#856404', lineHeight: '1.4' }}>
+          <div style={{ background: '#332b00', padding: '12px', borderRadius: '8px', marginTop: '10px', fontSize: '14px', color: '#ffdd66', lineHeight: '1.4' }}>
             💡 {noteText}
           </div>
         )}
