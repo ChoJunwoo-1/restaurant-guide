@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
+import { LINE_INFO } from '../constants'; // ★ 추가
 import '../index.css';
 
 const initialFormState = {
+  line: '2',
   station_ko: '', station_ja: '', station_en: '', station_zh: '',
   name_ko: '', genre_ko: '', name_ja: '', genre_ja: '',
   name_en: '', genre_en: '', name_zh: '', genre_zh: '',
@@ -157,6 +159,21 @@ export default function AdminPage() {
           </h2>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
             
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', marginBottom: '5px' }}>지하철 호선</label>
+              <select name="line" value={formData.line} onChange={handleChange} required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', boxSizing: 'border-box' }}>
+                <option value="1">1호선</option>
+                <option value="2">2호선</option>
+                <option value="3">3호선</option>
+                <option value="4">4호선</option>
+                <option value="5">5호선</option>
+                <option value="6">6호선</option>
+                <option value="7">7호선</option>
+                <option value="8">8호선</option>
+                <option value="9">9호선</option>
+              </select>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', background: '#f7f7f8', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
             <div>
               <label style={{ fontSize: '12px', color: '#8e8e93' }}>한국어 역 이름</label>
@@ -241,12 +258,17 @@ export default function AdminPage() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {restaurants.map(r => (
-              <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.05)' }}>
-                <div>
-                  <div style={{ fontSize: '13px', color: '#8e8e93', marginBottom: '4px' }}>🚇 {r.station_ko} (순서: {r.sort_order})</div>
-                  <div style={{ fontSize: '16px', fontWeight: '600' }}>{r.name_ko}</div>
-                </div>
+            {restaurants.map(r => {
+              const lineData = LINE_INFO[r.line] || { icon: '', color: '#000' };
+              return (
+                <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.05)' }}>
+                  <div>
+                    <div style={{ fontSize: '13px', color: '#8e8e93', marginBottom: '4px' }}>
+                      <span style={{ color: lineData.color, marginRight: '4px' }}>{lineData.icon}</span>
+                      {r.station_ko} (순서: {r.sort_order})
+                    </div>
+                    <div style={{ fontSize: '16px', fontWeight: '600' }}>{r.name_ko}</div>
+                 </div>
                 
                 {/* ★ 수정/삭제 버튼 그룹 */}
                 <div style={{ display: 'flex', gap: '8px' }}>
