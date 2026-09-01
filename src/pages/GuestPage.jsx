@@ -5,17 +5,17 @@ import { LINE_INFO } from '../constants';
 import '../index.css';
 
 const STATION_ORDER = [
-  '동대문',
-  '동대문역사문화공원',
-  '종로5가',
-  '동묘앞',
-  '혜화',
-  '을지로4가',
-  '신당',
-  '종로3가',
-  '을지로3가',
-  '명동',
-  '시청'
+  '동대문역',
+  '동대문역사문화공원역',
+  '종로5가역',
+  '동묘앞역',
+  '혜화역',
+  '을지로4가역',
+  '신당역',
+  '종로3가역',
+  '을지로3가역',
+  '명동역',
+  '시청역'
 ];
 
 export default function GuestPage() {
@@ -39,11 +39,12 @@ export default function GuestPage() {
   const stations = [...new Set(restaurants.map(r => r.station_ko))].sort((a, b) => {
     let indexA = STATION_ORDER.indexOf(a);
     let indexB = STATION_ORDER.indexOf(b);
-    if (indexA === -1) indexA = 999;
+    
+    if (indexA === -1) indexA = 999; // 목록에 없는 먼 역은 맨 아래로
     if (indexB === -1) indexB = 999;
+    
     return indexA - indexB;
   });
-
   return (
     <div className="container">
       <h1 style={{ fontSize: '28px', fontWeight: '800', color: '#ffffff' }}>맛집 추천</h1>
