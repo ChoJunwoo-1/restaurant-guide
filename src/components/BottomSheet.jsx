@@ -5,7 +5,6 @@ export default function BottomSheet({ restaurant, lang, onClose }) {
 
   const naverText = { ko: '네이버 지도', ja: 'Naver マップ', en: 'Naver Map' };
   const googleText = { ko: '구글 지도', ja: 'Google マップ', en: 'Google Map' };
-
   const lines = restaurant.line ? String(restaurant.line).split(',') : [];
   
   const noteText = restaurant[`note_${lang}`];
@@ -25,7 +24,7 @@ export default function BottomSheet({ restaurant, lang, onClose }) {
         <p className="sheet-genre">{genreText}</p>
 
         {noteText && (
-          <div style={{ background: '#332b00', padding: '12px', borderRadius: '8px', marginTop: '10px', fontSize: '14px', color: '#ffdd66', lineHeight: '1.4' }}>
+          <div style={{ background: 'var(--note-bg)', padding: '12px', borderRadius: '8px', marginTop: '10px', fontSize: '14px', color: 'var(--note-text)', lineHeight: '1.4' }}>
             💡 {noteText}
           </div>
         )}
