@@ -40,11 +40,17 @@ export default function GuestPage() {
         const stationName = groupRestaurants[0][`station_${lang}`] || stationKo;
         // 여러 호선을 배열로 분리
         const lines = groupRestaurants[0].line ? String(groupRestaurants[0].line).split(',') : [];
-        
+
         return (
           <div key={stationKo}>
             <h2 className="station-title">
-              <span style={{ color: lineData.color, marginRight: '4px' }}>{lineData.icon}</span>
+              {/* 여러 호선 아이콘 순차적 출력 */}
+              {lines.map(l => {
+                const lineData = LINE_INFO[l];
+                return lineData ? (
+                  <span key={l} style={{ color: lineData.color, marginRight: '4px' }}>{lineData.icon}</span>
+                ) : null;
+              })}
               {stationName}
             </h2>
             <div className="card-grid">
