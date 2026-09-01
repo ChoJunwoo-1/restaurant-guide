@@ -3,12 +3,17 @@ import { supabase } from '../supabaseClient';
 import { LINE_INFO } from '../constants';
 import '../index.css';
 
-const initialFormState = {
+const initialRestaurantForm = {
   line: '2',
   station_ko: '', station_ja: '', station_en: '', station_zh: '',
-  name_ko: '', genre_ko: '', name_ja: '', genre_ja: '',
-  name_en: '', genre_en: '', name_zh: '', genre_zh: '',
-  naver_url: '', sort_order: 1
+  name_ko: '', name_ja: '', name_en: '', name_zh: '',
+  genre_id: '', // 기존 텍스트 장르 대신 ID로 저장
+  note_ko: '', note_ja: '', note_en: '', note_zh: '',
+  naver_url: '', google_url: '', sort_order: 1
+};
+
+const initialGenreForm = {
+  name_ko: '', name_ja: '', name_en: '', name_zh: ''
 };
 
 export default function AdminPage() {
@@ -16,111 +21,111 @@ export default function AdminPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  const [activeTab, setActiveTab] = useState('restaurants'); // 'restaurants' or 'genres'
+  
   const [restaurants, setRestaurants] = useState([]);
+  const [genres, setGenres] = useState([]);
   
-  const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState(initialFormState);
-  
-  const [editId, setEditId] = useState(null);
+  const [showResForm, setShowResForm] = useState(false);
+  const [resFormData, setResFormData] = useState(initialRestaurantForm);
+  const [editResId, setEditResId] = useState(null);
+
+  const [genreFormData, setGenreFormData] = useState(initialGenreForm);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session) fetchRestaurants();
+      if (session) { fetchRestaurants(); fetchGenres(); }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session) fetchRestaurants();
+      if (session) { fetchRestaurants(); fetchGenres(); }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
   const fetchRestaurants = async () => {
-    const { data, error } = await supabase
-      .from('restaurants')
-      .select('*')
-      .order('station_ko', { ascending: true })
-      .order('sort_order', { ascending: true });
-
-    if (!error) setRestaurants(data);
+    const { data } = await supabase.from('restaurants').select('*, genres(*)').order('station_ko').order('sort_order');
+    if (data) setRestaurants(data);
   };
 
-  const handleDelete = async (id, nameKo) => {
-    if (!window.confirm(`${nameKo} 식당을 정말 삭제하시겠습니까?`)) return;
-    const { error } = await supabase.from('restaurants').delete().eq('id', id);
+  const fetchGenres = async () => {
+    const { data } = await supabase.from('genres').select('*').order('created_at');
+    if (data) setGenres(data);
+  };
+
+  // --- 장르 관련 함수 ---
+  const handleGenreChange = (e) => {
+    setGenreFormData({ ...genreFormData, [e.target.name]: e.target.value });
+  };
+
+  const handleGenreSubmit = async (e) => {
+    e.preventDefault();
+    const { error } = await supabase.from('genres').insert([genreFormData]);
     if (!error) {
-      setRestaurants(restaurants.filter(r => r.id !== id));
-      alert('삭제되었습니다.');
-    } else {
-      alert('삭제 중 오류가 발생했습니다.');
+      alert('장르가 추가되었습니다!');
+      setGenreFormData(initialGenreForm);
+      fetchGenres();
     }
   };
 
-  const handleEdit = (restaurant) => {
-    setFormData(restaurant);
-    setEditId(restaurant.id);
-    setShowForm(true);
+  const handleGenreDelete = async (id, nameKo) => {
+    if (!window.confirm(`${nameKo} 장르를 삭제하시겠습니까? (이 장르를 쓰는 식당의 장르가 비워집니다)`)) return;
+    const { error } = await supabase.from('genres').delete().eq('id', id);
+    if (!error) {
+      alert('삭제되었습니다.');
+      fetchGenres();
+      fetchRestaurants(); // 식당 리스트도 갱신
+    }
   };
 
-  const resetForm = () => {
-    setFormData(initialFormState);
-    setEditId(null);
-    setShowForm(false);
-  };
-
-  const handleChange = (e) => {
+  // --- 식당 관련 함수 ---
+  const handleResChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ 
-      ...formData, 
-      [name]: name === 'sort_order' ? Number(value) : value 
-    });
+    setResFormData({ ...resFormData, [name]: name === 'sort_order' ? Number(value) : value });
   };
 
-  const handleSubmit = async (e) => {
+  const handleResSubmit = async (e) => {
     e.preventDefault();
+    const { id, created_at, genres, ...updateData } = resFormData; // 불필요한 조인 데이터 제거
     
-    const { id, created_at, ...updateData } = formData;
-    
-    if (editId) {
-      const { error } = await supabase
-        .from('restaurants')
-        .update(updateData)
-        .eq('id', editId); 
-        
-      if (error) {
-        console.error(error);
-        alert('수정 중 오류가 발생했습니다.');
-      } else {
-        alert('맛집이 성공적으로 수정되었습니다!');
-        resetForm();
+    if (editResId) {
+      const { error } = await supabase.from('restaurants').update(updateData).eq('id', editResId);
+      if (!error) {
+        alert('맛집이 수정되었습니다!');
+        setResFormData(initialRestaurantForm); setEditResId(null); setShowResForm(false);
         fetchRestaurants();
       }
     } else {
       const { error } = await supabase.from('restaurants').insert([updateData]);
-      
-      if (error) {
-        console.error(error);
-        alert('저장 중 오류가 발생했습니다.');
-      } else {
-        alert('맛집이 성공적으로 추가되었습니다!');
-        resetForm();
+      if (!error) {
+        alert('맛집이 추가되었습니다!');
+        setResFormData(initialRestaurantForm); setShowResForm(false);
         fetchRestaurants();
       }
     }
   };
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) alert('로그인 실패: 이메일이나 비밀번호를 확인해주세요.');
-    setLoading(false);
+  const handleResEdit = (r) => {
+    setResFormData({ ...initialRestaurantForm, ...r, genre_id: r.genre_id || '' });
+    setEditResId(r.id);
+    setShowResForm(true);
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
+  const handleResDelete = async (id, nameKo) => {
+    if (!window.confirm(`${nameKo} 식당을 정말 삭제하시겠습니까?`)) return;
+    const { error } = await supabase.from('restaurants').delete().eq('id', id);
+    if (!error) fetchRestaurants();
+  };
+
+  // --- 로그인/아웃 ---
+  const handleLogin = async (e) => {
+    e.preventDefault(); setLoading(true);
+    await supabase.auth.signInWithPassword({ email, password });
+    setLoading(false);
   };
 
   if (!session) {
@@ -128,11 +133,9 @@ export default function AdminPage() {
       <div className="container" style={{ maxWidth: '400px', marginTop: '50px' }}>
         <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '20px' }}>관리자 로그인</h1>
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          <input type="email" placeholder="이메일" value={email} onChange={(e) => setEmail(e.target.value)} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '16px' }} required />
-          <input type="password" placeholder="비밀번호" value={password} onChange={(e) => setPassword(e.target.value)} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '16px' }} required />
-          <button type="submit" disabled={loading} style={{ padding: '14px', borderRadius: '8px', background: '#000', color: '#fff', fontWeight: 'bold', fontSize: '16px', border: 'none', cursor: 'pointer' }}>
-            {loading ? '로그인 중...' : '로그인'}
-          </button>
+          <input type="email" placeholder="이메일" value={email} onChange={(e) => setEmail(e.target.value)} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #ccc' }} required />
+          <input type="password" placeholder="비밀번호" value={password} onChange={(e) => setPassword(e.target.value)} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #ccc' }} required />
+          <button type="submit" style={{ padding: '14px', borderRadius: '8px', background: '#000', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}>로그인</button>
         </form>
       </div>
     );
@@ -140,166 +143,149 @@ export default function AdminPage() {
 
   return (
     <div className="container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>관리자 대시보드</h1>
-        <button onClick={handleLogout} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #ccc', background: 'white', cursor: 'pointer', fontSize: '14px' }}>로그아웃</button>
+        <button onClick={() => supabase.auth.signOut()} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #ccc', background: 'white' }}>로그아웃</button>
       </div>
 
-      {showForm ? (
-        <div style={{ background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.05)' }}>
-          <h2 style={{ fontSize: '20px', marginTop: '0', marginBottom: '20px' }}>
-            {editId ? '맛집 정보 수정' : '새 맛집 추가'}
-          </h2>
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            
-            {/* ★ 수정된 부분: 다중 선택 가능한 호선 체크박스 */}
-            <div style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', marginBottom: '5px' }}>지하철 호선 (여러 개 선택 가능)</label>
-              <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', padding: '15px', background: '#f7f7f8', borderRadius: '8px' }}>
-                {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(num => {
-                  const currentLines = formData.line ? String(formData.line).split(',') : [];
-                  const isChecked = currentLines.includes(num);
+      {/* 탭 메뉴 */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+        <button onClick={() => setActiveTab('restaurants')} style={{ flex: 1, padding: '12px', fontWeight: 'bold', borderRadius: '8px', border: 'none', background: activeTab === 'restaurants' ? '#000' : '#f2f2f7', color: activeTab === 'restaurants' ? '#fff' : '#000' }}>맛집 관리</button>
+        <button onClick={() => setActiveTab('genres')} style={{ flex: 1, padding: '12px', fontWeight: 'bold', borderRadius: '8px', border: 'none', background: activeTab === 'genres' ? '#000' : '#f2f2f7', color: activeTab === 'genres' ? '#fff' : '#000' }}>장르 관리</button>
+      </div>
+
+      {/* 탭 1: 장르 관리 */}
+      {activeTab === 'genres' && (
+        <div>
+          <div style={{ background: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #eee', marginBottom: '20px' }}>
+            <h2 style={{ fontSize: '18px', marginTop: 0 }}>새 장르 추가</h2>
+            <form onSubmit={handleGenreSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <input name="name_ko" placeholder="한국어 장르" value={genreFormData.name_ko} onChange={handleGenreChange} required style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }} />
+              <input name="name_ja" placeholder="日本語 장르" value={genreFormData.name_ja} onChange={handleGenreChange} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }} />
+              <input name="name_en" placeholder="English 장르" value={genreFormData.name_en} onChange={handleGenreChange} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }} />
+              <input name="name_zh" placeholder="中文 장르" value={genreFormData.name_zh} onChange={handleGenreChange} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }} />
+              <button type="submit" style={{ gridColumn: 'span 2', padding: '12px', background: '#03C75A', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>장르 저장하기</button>
+            </form>
+          </div>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {genres.map(g => (
+              <div key={g.id} style={{ display: 'flex', justifyContent: 'space-between', background: 'white', padding: '15px', borderRadius: '8px', border: '1px solid #eee' }}>
+                <div><strong>{g.name_ko}</strong> ({g.name_ja} / {g.name_en} / {g.name_zh})</div>
+                <button onClick={() => handleGenreDelete(g.id, g.name_ko)} style={{ color: 'red', border: 'none', background: 'none', cursor: 'pointer' }}>삭제</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 탭 2: 맛집 관리 */}
+      {activeTab === 'restaurants' && (
+        <div>
+          {showResForm ? (
+            <div style={{ background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #eee', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '20px', marginTop: 0 }}>{editResId ? '맛집 수정' : '새 맛집 추가'}</h2>
+              <form onSubmit={handleResSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                
+                {/* 호선 선택 */}
+                <div style={{ padding: '15px', background: '#f7f7f8', borderRadius: '8px' }}>
+                  <label style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '8px', display: 'block' }}>지하철 호선</label>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(num => {
+                      const currentLines = resFormData.line ? String(resFormData.line).split(',') : [];
+                      const isChecked = currentLines.includes(num);
+                      return (
+                        <label key={num} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '14px' }}>
+                          <input type="checkbox" checked={isChecked} onChange={() => {
+                            let newLines = isChecked ? currentLines.filter(l => l !== num) : [...currentLines, num].sort();
+                            setResFormData({ ...resFormData, line: newLines.join(',') });
+                          }} /> {num}호선
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 역 이름 */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', background: '#f7f7f8', padding: '15px', borderRadius: '8px' }}>
+                  <div><label style={{ fontSize: '12px' }}>역 이름 (한국어)</label><input name="station_ko" value={resFormData.station_ko} onChange={handleResChange} required style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} /></div>
+                  <div><label style={{ fontSize: '12px' }}>역 이름 (일어)</label><input name="station_ja" value={resFormData.station_ja} onChange={handleResChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} /></div>
+                  <div><label style={{ fontSize: '12px' }}>역 이름 (영어)</label><input name="station_en" value={resFormData.station_en} onChange={handleResChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} /></div>
+                  <div><label style={{ fontSize: '12px' }}>역 이름 (중어)</label><input name="station_zh" value={resFormData.station_zh} onChange={handleResChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} /></div>
+                </div>
+
+                {/* 가게 이름 */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', background: '#f7f7f8', padding: '15px', borderRadius: '8px' }}>
+                  <div><label style={{ fontSize: '12px' }}>가게명 (한국어)</label><input name="name_ko" value={resFormData.name_ko} onChange={handleResChange} required style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} /></div>
+                  <div><label style={{ fontSize: '12px' }}>가게명 (일어)</label><input name="name_ja" value={resFormData.name_ja} onChange={handleResChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} /></div>
+                  <div><label style={{ fontSize: '12px' }}>가게명 (영어)</label><input name="name_en" value={resFormData.name_en} onChange={handleResChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} /></div>
+                  <div><label style={{ fontSize: '12px' }}>가게명 (중어)</label><input name="name_zh" value={resFormData.name_zh} onChange={handleResChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} /></div>
+                </div>
+
+                {/* 장르 선택 (드롭다운) */}
+                <div>
+                  <label style={{ fontWeight: 'bold', fontSize: '14px', display: 'block', marginBottom: '5px' }}>장르 선택</label>
+                  <select name="genre_id" value={resFormData.genre_id} onChange={handleResChange} required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc' }}>
+                    <option value="">-- 장르를 선택하세요 --</option>
+                    {genres.map(g => <option key={g.id} value={g.id}>{g.name_ko}</option>)}
+                  </select>
+                </div>
+
+                {/* 특이사항 (비고란) */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', background: '#fff3cd', padding: '15px', borderRadius: '8px' }}>
+                  <div style={{ gridColumn: 'span 2', fontSize: '14px', fontWeight: 'bold', color: '#856404' }}>💡 특이사항 / 비고란 (웨이팅 등)</div>
+                  <textarea name="note_ko" placeholder="한국어 비고" value={resFormData.note_ko} onChange={handleResChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box', height: '60px' }} />
+                  <textarea name="note_ja" placeholder="日本語 비고" value={resFormData.note_ja} onChange={handleResChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box', height: '60px' }} />
+                  <textarea name="note_en" placeholder="English 비고" value={resFormData.note_en} onChange={handleResChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box', height: '60px' }} />
+                  <textarea name="note_zh" placeholder="中文 비고" value={resFormData.note_zh} onChange={handleResChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box', height: '60px' }} />
+                </div>
+
+                {/* 링크 & 순서 */}
+                <div>
+                  <label style={{ fontSize: '14px', fontWeight: 'bold' }}>네이버 리뷰 URL</label>
+                  <input type="url" name="naver_url" value={resFormData.naver_url} onChange={handleResChange} required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', marginTop: '5px', boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '14px', fontWeight: 'bold' }}>구글 맵 URL (선택)</label>
+                  <input type="url" name="google_url" value={resFormData.google_url || ''} onChange={handleResChange} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', marginTop: '5px', boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '14px', fontWeight: 'bold' }}>표시 순서</label>
+                  <input type="number" name="sort_order" value={resFormData.sort_order} onChange={handleResChange} required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', marginTop: '5px', boxSizing: 'border-box' }} />
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                  <button type="button" onClick={() => {setResFormData(initialRestaurantForm); setShowResForm(false); setEditResId(null);}} style={{ flex: 1, padding: '14px', borderRadius: '8px' }}>취소</button>
+                  <button type="submit" style={{ flex: 2, padding: '14px', borderRadius: '8px', background: '#03C75A', color: 'white', fontWeight: 'bold', border: 'none' }}>저장하기</button>
+                </div>
+              </form>
+            </div>
+          ) : (
+            <>
+              <button onClick={() => { setResFormData(initialRestaurantForm); setShowResForm(true); }} style={{ padding: '12px 20px', background: '#000', color: '#fff', borderRadius: '10px', border: 'none', fontWeight: 'bold', marginBottom: '20px' }}>+ 맛집 추가</button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {restaurants.map(r => {
+                  const lines = r.line ? String(r.line).split(',') : [];
                   return (
-                    <label key={num} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '14px' }}>
-                      <input 
-                        type="checkbox" 
-                        value={num}
-                        checked={isChecked}
-                        onChange={(e) => {
-                          let newLines;
-                          if (isChecked) {
-                            newLines = currentLines.filter(l => l !== num); // 체크 해제 시 제거
-                          } else {
-                            newLines = [...currentLines, num].sort(); // 체크 시 추가하고 번호순 정렬
-                          }
-                          setFormData({ ...formData, line: newLines.join(',') });
-                        }}
-                      />
-                      {num}호선
-                    </label>
+                    <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid #eee' }}>
+                      <div>
+                        <div style={{ fontSize: '13px', color: '#8e8e93', marginBottom: '4px' }}>
+                          {lines.map(l => LINE_INFO[l] ? <span key={l} style={{ color: LINE_INFO[l].color, marginRight: '4px' }}>{LINE_INFO[l].icon}</span> : null)}
+                          {r.station_ko} (장르: {r.genres ? r.genres.name_ko : '미지정'})
+                        </div>
+                        <div style={{ fontSize: '16px', fontWeight: '600' }}>{r.name_ko}</div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button onClick={() => handleResEdit(r)} style={{ background: '#f2f2f7', color: '#007aff', border: 'none', padding: '8px 16px', borderRadius: '8px' }}>수정</button>
+                        <button onClick={() => handleResDelete(r.id, r.name_ko)} style={{ background: '#ffebee', color: '#ff3b30', border: 'none', padding: '8px 16px', borderRadius: '8px' }}>삭제</button>
+                      </div>
+                    </div>
                   );
                 })}
               </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', background: '#f7f7f8', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
-            <div>
-              <label style={{ fontSize: '12px', color: '#8e8e93' }}>한국어 역 이름</label>
-              <input name="station_ko" value={formData.station_ko} onChange={handleChange} required style={{ width: '100%', padding: '8px', boxSizing: 'border-box', marginTop: '4px' }} />
-            </div>
-            <div>
-              <label style={{ fontSize: '12px', color: '#8e8e93' }}>日本語 역 이름</label>
-              <input name="station_ja" value={formData.station_ja} onChange={handleChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box', marginTop: '4px' }} />
-            </div>
-            <div>
-              <label style={{ fontSize: '12px', color: '#8e8e93' }}>English 역 이름</label>
-              <input name="station_en" value={formData.station_en} onChange={handleChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box', marginTop: '4px' }} />
-            </div>
-            <div>
-              <label style={{ fontSize: '12px', color: '#8e8e93' }}>中文 역 이름</label>
-              <input name="station_zh" value={formData.station_zh} onChange={handleChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box', marginTop: '4px' }} />
-            </div>
-          </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', background: '#f7f7f8', padding: '15px', borderRadius: '8px' }}>
-              <div>
-                <label style={{ fontSize: '12px', color: '#8e8e93' }}>한국어 이름</label>
-                <input name="name_ko" value={formData.name_ko} onChange={handleChange} required style={{ width: '100%', padding: '8px', boxSizing: 'border-box', marginTop: '4px' }} />
-              </div>
-              <div>
-                <label style={{ fontSize: '12px', color: '#8e8e93' }}>한국어 장르</label>
-                <input name="genre_ko" value={formData.genre_ko} onChange={handleChange} required style={{ width: '100%', padding: '8px', boxSizing: 'border-box', marginTop: '4px' }} />
-              </div>
-              <div>
-                <label style={{ fontSize: '12px', color: '#8e8e93' }}>日本語 이름</label>
-                <input name="name_ja" value={formData.name_ja} onChange={handleChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box', marginTop: '4px' }} />
-              </div>
-              <div>
-                <label style={{ fontSize: '12px', color: '#8e8e93' }}>日本語 장르</label>
-                <input name="genre_ja" value={formData.genre_ja} onChange={handleChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box', marginTop: '4px' }} />
-              </div>
-              <div>
-                <label style={{ fontSize: '12px', color: '#8e8e93' }}>English 이름</label>
-                <input name="name_en" value={formData.name_en} onChange={handleChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box', marginTop: '4px' }} />
-              </div>
-              <div>
-                <label style={{ fontSize: '12px', color: '#8e8e93' }}>English 장르</label>
-                <input name="genre_en" value={formData.genre_en} onChange={handleChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box', marginTop: '4px' }} />
-              </div>
-              <div>
-                <label style={{ fontSize: '12px', color: '#8e8e93' }}>中文 이름</label>
-                <input name="name_zh" value={formData.name_zh} onChange={handleChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box', marginTop: '4px' }} />
-              </div>
-              <div>
-                <label style={{ fontSize: '12px', color: '#8e8e93' }}>中文 장르</label>
-                <input name="genre_zh" value={formData.genre_zh} onChange={handleChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box', marginTop: '4px' }} />
-              </div>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', marginBottom: '5px' }}>네이버 리뷰 URL</label>
-              <input type="url" name="naver_url" value={formData.naver_url} onChange={handleChange} placeholder="https://..." required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', marginBottom: '5px' }}>표시 순서 (숫자)</label>
-              <input type="number" name="sort_order" value={formData.sort_order} onChange={handleChange} required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
-            </div>
-
-            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-              <button type="button" onClick={resetForm} style={{ flex: 1, padding: '14px', borderRadius: '8px', border: '1px solid #ccc', background: 'white', fontWeight: 'bold', cursor: 'pointer' }}>취소</button>
-              <button type="submit" style={{ flex: 2, padding: '14px', borderRadius: '8px', border: 'none', background: '#03C75A', color: 'white', fontWeight: 'bold', cursor: 'pointer' }}>
-                {editId ? '수정하기' : '저장하기'}
-              </button>
-            </div>
-          </form>
+            </>
+          )}
         </div>
-      ) : (
-        <>
-          <div style={{ marginBottom: '20px' }}>
-            <button 
-              onClick={() => { resetForm(); setShowForm(true); }}
-              style={{ padding: '12px 20px', background: '#000', color: '#fff', borderRadius: '10px', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '16px' }}
-            >
-              + 맛집 추가
-            </button>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {restaurants.map(r => {
-              const lines = r.line ? String(r.line).split(',') : [];
-              return (
-                <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.05)' }}>
-                  <div>
-                    <div style={{ fontSize: '13px', color: '#8e8e93', marginBottom: '4px' }}>
-                      {lines.map(l => {
-                        const lineData = LINE_INFO[l];
-                        return lineData ? <span key={l} style={{ color: lineData.color, marginRight: '4px' }}>{lineData.icon}</span> : null;
-                      })}
-                      {r.station_ko} (순서: {r.sort_order})
-                    </div>
-                    <div style={{ fontSize: '16px', fontWeight: '600' }}>{r.name_ko}</div>
-                  </div>
-                
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button 
-                      onClick={() => handleEdit(r)}
-                      style={{ background: '#f2f2f7', color: '#007aff', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
-                    >
-                      수정
-                    </button>
-                    <button 
-                      onClick={() => handleDelete(r.id, r.name_ko)}
-                      style={{ background: '#ffebee', color: '#ff3b30', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
-                    >
-                      삭제
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </>
       )}
     </div>
   );
