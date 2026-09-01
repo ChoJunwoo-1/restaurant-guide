@@ -30,10 +30,22 @@ export default function GuestPage() {
     <div className="container">
       <h1 style={{ fontSize: '28px', fontWeight: '800' }}>Nearby Eats</h1>
       <div className="lang-selector">
-        <button className={`lang-btn ${lang === 'ko' ? 'active' : ''}`} onClick={() => setLang('ko')}>🇰🇷 한국어</button>
-        <button className={`lang-btn ${lang === 'ja' ? 'active' : ''}`} onClick={() => setLang('ja')}>🇯🇵 日本語</button>
-        <button className={`lang-btn ${lang === 'en' ? 'active' : ''}`} onClick={() => setLang('en')}>🇺🇸 English</button>
-        <button className={`lang-btn ${lang === 'zh' ? 'active' : ''}`} onClick={() => setLang('zh')}>🇨🇳 中文</button>
+        <button className={`lang-btn ${lang === 'ko' ? 'active' : ''}`} onClick={() => setLang('ko')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+          <img src="https://flagcdn.com/w20/kr.png" alt="Korea" style={{ width: '18px', borderRadius: '2px' }} />
+          한국어
+        </button>
+        <button className={`lang-btn ${lang === 'ja' ? 'active' : ''}`} onClick={() => setLang('ja')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+          <img src="https://flagcdn.com/w20/jp.png" alt="Japan" style={{ width: '18px', borderRadius: '2px' }} />
+          日本語
+        </button>
+        <button className={`lang-btn ${lang === 'en' ? 'active' : ''}`} onClick={() => setLang('en')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+          <img src="https://flagcdn.com/w20/us.png" alt="USA" style={{ width: '18px', borderRadius: '2px' }} />
+          English
+        </button>
+        <button className={`lang-btn ${lang === 'zh' ? 'active' : ''}`} onClick={() => setLang('zh')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+          <img src="https://flagcdn.com/w20/cn.png" alt="China" style={{ width: '18px', borderRadius: '2px' }} />
+          中文
+        </button>
       </div>
 
       {stations.map(stationKo => {
