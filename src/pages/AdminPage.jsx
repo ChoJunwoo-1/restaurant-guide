@@ -5,15 +5,15 @@ import '../index.css';
 
 const initialRestaurantForm = {
   line: '2',
-  station_ko: '', station_ja: '', station_en: '', station_zh: '',
-  name_ko: '', name_ja: '', name_en: '', name_zh: '',
-  genre_id: '', // 기존 텍스트 장르 대신 ID로 저장
-  note_ko: '', note_ja: '', note_en: '', note_zh: '',
+  station_ko: '', station_ja: '', station_en: '',
+  name_ko: '', name_ja: '', name_en: '',
+  genre_id: '',
+  note_ko: '', note_ja: '', note_en: '',
   naver_url: '', google_url: '', sort_order: 1
 };
 
 const initialGenreForm = {
-  name_ko: '', name_ja: '', name_en: '', name_zh: ''
+  name_ko: '', name_ja: '', name_en: ''
 };
 
 export default function AdminPage() {
@@ -22,7 +22,7 @@ export default function AdminPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const [activeTab, setActiveTab] = useState('restaurants'); // 'restaurants' or 'genres'
+  const [activeTab, setActiveTab] = useState('restaurants'); 
   
   const [restaurants, setRestaurants] = useState([]);
   const [genres, setGenres] = useState([]);
@@ -57,7 +57,6 @@ export default function AdminPage() {
     if (data) setGenres(data);
   };
 
-  // --- 장르 관련 함수 ---
   const handleGenreChange = (e) => {
     setGenreFormData({ ...genreFormData, [e.target.name]: e.target.value });
   };
@@ -78,11 +77,10 @@ export default function AdminPage() {
     if (!error) {
       alert('삭제되었습니다.');
       fetchGenres();
-      fetchRestaurants(); // 식당 리스트도 갱신
+      fetchRestaurants(); 
     }
   };
 
-  // --- 식당 관련 함수 ---
   const handleResChange = (e) => {
     const { name, value } = e.target;
     setResFormData({ ...resFormData, [name]: name === 'sort_order' ? Number(value) : value });
@@ -90,7 +88,7 @@ export default function AdminPage() {
 
   const handleResSubmit = async (e) => {
     e.preventDefault();
-    const { id, created_at, genres, ...updateData } = resFormData; // 불필요한 조인 데이터 제거
+    const { id, created_at, genres, ...updateData } = resFormData; 
     
     if (editResId) {
       const { error } = await supabase.from('restaurants').update(updateData).eq('id', editResId);
@@ -121,7 +119,6 @@ export default function AdminPage() {
     if (!error) fetchRestaurants();
   };
 
-  // --- 로그인/아웃 ---
   const handleLogin = async (e) => {
     e.preventDefault(); setLoading(true);
     await supabase.auth.signInWithPassword({ email, password });
@@ -148,13 +145,11 @@ export default function AdminPage() {
         <button onClick={() => supabase.auth.signOut()} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #ccc', background: 'white' }}>로그아웃</button>
       </div>
 
-      {/* 탭 메뉴 */}
       <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
         <button onClick={() => setActiveTab('restaurants')} style={{ flex: 1, padding: '12px', fontWeight: 'bold', borderRadius: '8px', border: 'none', background: activeTab === 'restaurants' ? '#000' : '#f2f2f7', color: activeTab === 'restaurants' ? '#fff' : '#000' }}>맛집 관리</button>
         <button onClick={() => setActiveTab('genres')} style={{ flex: 1, padding: '12px', fontWeight: 'bold', borderRadius: '8px', border: 'none', background: activeTab === 'genres' ? '#000' : '#f2f2f7', color: activeTab === 'genres' ? '#fff' : '#000' }}>장르 관리</button>
       </div>
 
-      {/* 탭 1: 장르 관리 */}
       {activeTab === 'genres' && (
         <div>
           <div style={{ background: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #eee', marginBottom: '20px' }}>
@@ -163,7 +158,6 @@ export default function AdminPage() {
               <input name="name_ko" placeholder="한국어 장르" value={genreFormData.name_ko} onChange={handleGenreChange} required style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }} />
               <input name="name_ja" placeholder="日本語 장르" value={genreFormData.name_ja} onChange={handleGenreChange} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }} />
               <input name="name_en" placeholder="English 장르" value={genreFormData.name_en} onChange={handleGenreChange} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }} />
-              <input name="name_zh" placeholder="中文 장르" value={genreFormData.name_zh} onChange={handleGenreChange} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }} />
               <button type="submit" style={{ gridColumn: 'span 2', padding: '12px', background: '#03C75A', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>장르 저장하기</button>
             </form>
           </div>
@@ -171,7 +165,7 @@ export default function AdminPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {genres.map(g => (
               <div key={g.id} style={{ display: 'flex', justifyContent: 'space-between', background: 'white', padding: '15px', borderRadius: '8px', border: '1px solid #eee' }}>
-                <div><strong>{g.name_ko}</strong> ({g.name_ja} / {g.name_en} / {g.name_zh})</div>
+                <div><strong>{g.name_ko}</strong> ({g.name_ja} / {g.name_en})</div>
                 <button onClick={() => handleGenreDelete(g.id, g.name_ko)} style={{ color: 'red', border: 'none', background: 'none', cursor: 'pointer' }}>삭제</button>
               </div>
             ))}
@@ -179,7 +173,6 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* 탭 2: 맛집 관리 */}
       {activeTab === 'restaurants' && (
         <div>
           {showResForm ? (
@@ -187,7 +180,6 @@ export default function AdminPage() {
               <h2 style={{ fontSize: '20px', marginTop: 0 }}>{editResId ? '맛집 수정' : '새 맛집 추가'}</h2>
               <form onSubmit={handleResSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                 
-                {/* 호선 선택 */}
                 <div style={{ padding: '15px', background: '#f7f7f8', borderRadius: '8px' }}>
                   <label style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '8px', display: 'block' }}>지하철 호선</label>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
@@ -206,23 +198,18 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                {/* 역 이름 */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', background: '#f7f7f8', padding: '15px', borderRadius: '8px' }}>
                   <div><label style={{ fontSize: '12px' }}>역 이름 (한국어)</label><input name="station_ko" value={resFormData.station_ko} onChange={handleResChange} required style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} /></div>
                   <div><label style={{ fontSize: '12px' }}>역 이름 (일어)</label><input name="station_ja" value={resFormData.station_ja} onChange={handleResChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} /></div>
                   <div><label style={{ fontSize: '12px' }}>역 이름 (영어)</label><input name="station_en" value={resFormData.station_en} onChange={handleResChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} /></div>
-                  <div><label style={{ fontSize: '12px' }}>역 이름 (중어)</label><input name="station_zh" value={resFormData.station_zh} onChange={handleResChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} /></div>
                 </div>
 
-                {/* 가게 이름 */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', background: '#f7f7f8', padding: '15px', borderRadius: '8px' }}>
                   <div><label style={{ fontSize: '12px' }}>가게명 (한국어)</label><input name="name_ko" value={resFormData.name_ko} onChange={handleResChange} required style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} /></div>
                   <div><label style={{ fontSize: '12px' }}>가게명 (일어)</label><input name="name_ja" value={resFormData.name_ja} onChange={handleResChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} /></div>
                   <div><label style={{ fontSize: '12px' }}>가게명 (영어)</label><input name="name_en" value={resFormData.name_en} onChange={handleResChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} /></div>
-                  <div><label style={{ fontSize: '12px' }}>가게명 (중어)</label><input name="name_zh" value={resFormData.name_zh} onChange={handleResChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} /></div>
                 </div>
 
-                {/* 장르 선택 (드롭다운) */}
                 <div>
                   <label style={{ fontWeight: 'bold', fontSize: '14px', display: 'block', marginBottom: '5px' }}>장르 선택</label>
                   <select name="genre_id" value={resFormData.genre_id} onChange={handleResChange} required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc' }}>
@@ -231,16 +218,13 @@ export default function AdminPage() {
                   </select>
                 </div>
 
-                {/* 특이사항 (비고란) */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', background: '#fff3cd', padding: '15px', borderRadius: '8px' }}>
                   <div style={{ gridColumn: 'span 2', fontSize: '14px', fontWeight: 'bold', color: '#856404' }}>💡 특이사항 / 비고란 (웨이팅 등)</div>
                   <textarea name="note_ko" placeholder="한국어 비고" value={resFormData.note_ko} onChange={handleResChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box', height: '60px' }} />
                   <textarea name="note_ja" placeholder="日本語 비고" value={resFormData.note_ja} onChange={handleResChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box', height: '60px' }} />
                   <textarea name="note_en" placeholder="English 비고" value={resFormData.note_en} onChange={handleResChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box', height: '60px' }} />
-                  <textarea name="note_zh" placeholder="中文 비고" value={resFormData.note_zh} onChange={handleResChange} style={{ width: '100%', padding: '8px', boxSizing: 'border-box', height: '60px' }} />
                 </div>
 
-                {/* 링크 & 순서 */}
                 <div>
                   <label style={{ fontSize: '14px', fontWeight: 'bold' }}>네이버 리뷰 URL</label>
                   <input type="url" name="naver_url" value={resFormData.naver_url} onChange={handleResChange} required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', marginTop: '5px', boxSizing: 'border-box' }} />

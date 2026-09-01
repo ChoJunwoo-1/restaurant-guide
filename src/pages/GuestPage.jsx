@@ -14,7 +14,6 @@ export default function GuestPage() {
   }, []);
 
   async function fetchRestaurants() {
-    // ★ 변경: 장르 테이블(genres)의 데이터도 함께 묶어서(join) 가져옵니다.
     const { data, error } = await supabase
       .from('restaurants')
       .select('*, genres(*)')
@@ -28,7 +27,7 @@ export default function GuestPage() {
 
   return (
     <div className="container">
-      <h1 style={{ fontSize: '28px', fontWeight: '800' }}>Nearby Eats</h1>
+      <h1 style={{ fontSize: '28px', fontWeight: '800' }}>맛집 추천</h1>
       <div className="lang-selector">
         <button className={`lang-btn ${lang === 'ko' ? 'active' : ''}`} onClick={() => setLang('ko')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
           <img src="https://flagcdn.com/w20/kr.png" alt="Korea" style={{ width: '18px', borderRadius: '2px' }} />
@@ -41,10 +40,6 @@ export default function GuestPage() {
         <button className={`lang-btn ${lang === 'en' ? 'active' : ''}`} onClick={() => setLang('en')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
           <img src="https://flagcdn.com/w20/us.png" alt="USA" style={{ width: '18px', borderRadius: '2px' }} />
           English
-        </button>
-        <button className={`lang-btn ${lang === 'zh' ? 'active' : ''}`} onClick={() => setLang('zh')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-          <img src="https://flagcdn.com/w20/cn.png" alt="China" style={{ width: '18px', borderRadius: '2px' }} />
-          中文
         </button>
       </div>
 
@@ -66,7 +61,6 @@ export default function GuestPage() {
               {groupRestaurants.map(restaurant => (
                 <div key={restaurant.id} className="card" onClick={() => setSelectedRestaurant(restaurant)}>
                   <h3 className="card-name">{restaurant[`name_${lang}`]}</h3>
-                  {/* ★ 변경: 가져온 genres 데이터에서 언어별 장르명을 출력 */}
                   <p className="card-genre">{restaurant.genres ? restaurant.genres[`name_${lang}`] : ''}</p>
                 </div>
               ))}
