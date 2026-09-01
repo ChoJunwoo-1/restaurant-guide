@@ -28,12 +28,12 @@ export default function GuestPage() {
 
   return (
     <div className="container">
-      <h1 style={{ fontSize: '28px', fontWeight: '800' }}>맛집 추천</h1>
+      <h1 style={{ fontSize: '28px', fontWeight: '800' }}>Nearby Eats</h1>
       <div className="lang-selector">
-        <button className={`lang-btn ${lang === 'ko' ? 'active' : ''}`} onClick={() => setLang('ko')}>한국어</button>
-        <button className={`lang-btn ${lang === 'ja' ? 'active' : ''}`} onClick={() => setLang('ja')}>日本語</button>
-        <button className={`lang-btn ${lang === 'en' ? 'active' : ''}`} onClick={() => setLang('en')}>English</button>
-        <button className={`lang-btn ${lang === 'zh' ? 'active' : ''}`} onClick={() => setLang('zh')}>中文</button>
+        <button className={`lang-btn ${lang === 'ko' ? 'active' : ''}`} onClick={() => setLang('ko')}>🇰🇷 한국어</button>
+        <button className={`lang-btn ${lang === 'ja' ? 'active' : ''}`} onClick={() => setLang('ja')}>🇯🇵 日本語</button>
+        <button className={`lang-btn ${lang === 'en' ? 'active' : ''}`} onClick={() => setLang('en')}>🇺🇸 English</button>
+        <button className={`lang-btn ${lang === 'zh' ? 'active' : ''}`} onClick={() => setLang('zh')}>🇨🇳 中文</button>
       </div>
 
       {stations.map(stationKo => {

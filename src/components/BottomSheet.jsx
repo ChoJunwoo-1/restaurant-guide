@@ -3,8 +3,8 @@ import { LINE_INFO } from '../constants';
 export default function BottomSheet({ restaurant, lang, onClose }) {
   if (!restaurant) return null;
 
-  const naverText = { ko: '네이버 지도', ja: 'Naver マップ', en: 'Naver Map', zh: 'Naver 地图' };
-  const googleText = { ko: '구글 지도', ja: 'Google マップ', en: 'Google Map', zh: 'Google 地图' };
+  const naverText = { ko: '네이버지도', ja: 'Naverマップ', en: 'Naver Map', zh: 'Naver 地图' };
+  const googleText = { ko: '구글지도', ja: 'Googleマップ', en: 'Google Map', zh: 'Google 地图' };
 
   const lines = restaurant.line ? String(restaurant.line).split(',') : [];
   
