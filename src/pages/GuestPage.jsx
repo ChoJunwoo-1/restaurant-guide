@@ -38,8 +38,9 @@ export default function GuestPage() {
       {stations.map(stationKo => {
         const groupRestaurants = restaurants.filter(r => r.station_ko === stationKo);
         const stationName = groupRestaurants[0][`station_${lang}`] || stationKo;
-        const lineData = LINE_INFO[groupRestaurants[0].line] || { icon: '', color: '#000' };
-
+        // 여러 호선을 배열로 분리
+        const lines = groupRestaurants[0].line ? String(groupRestaurants[0].line).split(',') : [];
+        
         return (
           <div key={stationKo}>
             <h2 className="station-title">

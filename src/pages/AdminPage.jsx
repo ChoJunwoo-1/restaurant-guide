@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { LINE_INFO } from '../constants'; // ★ 추가
+import { LINE_INFO } from '../constants';
 import '../index.css';
 
 const initialFormState = {
@@ -21,7 +21,6 @@ export default function AdminPage() {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState(initialFormState);
   
-  // ★ 추가된 부분: 현재 수정 중인 맛집의 ID를 저장 (null이면 '새로 추가' 상태)
   const [editId, setEditId] = useState(null);
 
   useEffect(() => {
@@ -59,14 +58,12 @@ export default function AdminPage() {
     }
   };
 
-  // ★ 추가된 부분: 수정 버튼을 눌렀을 때 폼에 기존 데이터를 채워넣는 함수
   const handleEdit = (restaurant) => {
-    setFormData(restaurant); // 폼 데이터에 선택한 식당 정보 넣기
-    setEditId(restaurant.id); // 수정 모드로 전환
-    setShowForm(true); // 폼 열기
+    setFormData(restaurant);
+    setEditId(restaurant.id);
+    setShowForm(true);
   };
 
-  // 폼을 닫고 초기화하는 함수
   const resetForm = () => {
     setFormData(initialFormState);
     setEditId(null);
@@ -84,14 +81,12 @@ export default function AdminPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // DB 고유값(id, created_at 등)을 빼고 순수 업데이트할 데이터만 분리합니다.
     const { id, created_at, ...updateData } = formData;
     
     if (editId) {
-      // ★ 수정(UPDATE) 모드
       const { error } = await supabase
         .from('restaurants')
-        .update(updateData) // formData 대신 분리해낸 updateData를 사용
+        .update(updateData)
         .eq('id', editId); 
         
       if (error) {
@@ -103,8 +98,7 @@ export default function AdminPage() {
         fetchRestaurants();
       }
     } else {
-      // ★ 추가(INSERT) 모드
-      const { error } = await supabase.from('restaurants').insert([updateData]); // 여기도 updateData 사용
+      const { error } = await supabase.from('restaurants').insert([updateData]);
       
       if (error) {
         console.error(error);
@@ -153,25 +147,39 @@ export default function AdminPage() {
 
       {showForm ? (
         <div style={{ background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid rgba(0,0,0,0.05)' }}>
-          {/* 수정 모드인지 추가 모드인지에 따라 제목 변경 */}
           <h2 style={{ fontSize: '20px', marginTop: '0', marginBottom: '20px' }}>
             {editId ? '맛집 정보 수정' : '새 맛집 추가'}
           </h2>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
             
+            {/* ★ 수정된 부분: 다중 선택 가능한 호선 체크박스 */}
             <div style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', marginBottom: '5px' }}>지하철 호선</label>
-              <select name="line" value={formData.line} onChange={handleChange} required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', boxSizing: 'border-box' }}>
-                <option value="1">1호선</option>
-                <option value="2">2호선</option>
-                <option value="3">3호선</option>
-                <option value="4">4호선</option>
-                <option value="5">5호선</option>
-                <option value="6">6호선</option>
-                <option value="7">7호선</option>
-                <option value="8">8호선</option>
-                <option value="9">9호선</option>
-              </select>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', marginBottom: '5px' }}>지하철 호선 (여러 개 선택 가능)</label>
+              <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', padding: '15px', background: '#f7f7f8', borderRadius: '8px' }}>
+                {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(num => {
+                  const currentLines = formData.line ? String(formData.line).split(',') : [];
+                  const isChecked = currentLines.includes(num);
+                  return (
+                    <label key={num} style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '14px' }}>
+                      <input 
+                        type="checkbox" 
+                        value={num}
+                        checked={isChecked}
+                        onChange={(e) => {
+                          let newLines;
+                          if (isChecked) {
+                            newLines = currentLines.filter(l => l !== num); // 체크 해제 시 제거
+                          } else {
+                            newLines = [...currentLines, num].sort(); // 체크 시 추가하고 번호순 정렬
+                          }
+                          setFormData({ ...formData, line: newLines.join(',') });
+                        }}
+                      />
+                      {num}호선
+                    </label>
+                  );
+                })}
+              </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', background: '#f7f7f8', padding: '15px', borderRadius: '8px', marginBottom: '15px' }}>
@@ -259,35 +267,37 @@ export default function AdminPage() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {restaurants.map(r => {
-              const lineData = LINE_INFO[r.line] || { icon: '', color: '#000' };
+              const lines = r.line ? String(r.line).split(',') : [];
               return (
                 <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '16px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.05)' }}>
                   <div>
                     <div style={{ fontSize: '13px', color: '#8e8e93', marginBottom: '4px' }}>
-                      <span style={{ color: lineData.color, marginRight: '4px' }}>{lineData.icon}</span>
+                      {lines.map(l => {
+                        const lineData = LINE_INFO[l];
+                        return lineData ? <span key={l} style={{ color: lineData.color, marginRight: '4px' }}>{lineData.icon}</span> : null;
+                      })}
                       {r.station_ko} (순서: {r.sort_order})
                     </div>
                     <div style={{ fontSize: '16px', fontWeight: '600' }}>{r.name_ko}</div>
-                 </div>
+                  </div>
                 
-                {/* ★ 수정/삭제 버튼 그룹 */}
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button 
-                    onClick={() => handleEdit(r)}
-                    style={{ background: '#f2f2f7', color: '#007aff', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
-                  >
-                    수정
-                  </button>
-                  <button 
-                    onClick={() => handleDelete(r.id, r.name_ko)}
-                    style={{ background: '#ffebee', color: '#ff3b30', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
-                  >
-                    삭제
-                  </button>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button 
+                      onClick={() => handleEdit(r)}
+                      style={{ background: '#f2f2f7', color: '#007aff', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
+                    >
+                      수정
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(r.id, r.name_ko)}
+                      style={{ background: '#ffebee', color: '#ff3b30', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
+                    >
+                      삭제
+                    </button>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
           </div>
         </>
       )}
